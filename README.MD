@@ -194,3 +194,48 @@ This project demonstrates a powerful, modern anomaly detection pipeline using:
 
 The results validate the model’s ability to detect and rank fraudulent behavior, even in a highly imbalanced financial dataset.
 
+
+## 📦 9. Repository Structure
+
+- ├─ DM_Project.ipynb # Main Jupyter Notebook with implementation
+- ├─ Dockerfile # Docker setup for environment reproducibility
+- └─ requirements.txt # Python dependencies
+
+
+---
+
+## ⚡ 10. Setup and Usage
+
+### Using Python
+
+```bash
+# Clone the repo
+git clone https://github.com/Aubakerzzz/DM_Projects
+cd DM_Projects
+
+# Create environment (optional but recommended)
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Launch Jupyter Notebook
+jupyter notebook DM_Project.ipynb
+
+
+## Using Docker 
+
+
+# Build Docker image
+docker build -t transformer-fraud .
+
+# Run Docker container
+docker run -p 8888:8888 transformer-fraud
+
+# Open Jupyter Notebook in browser
+http://localhost:8888
+
+
+
