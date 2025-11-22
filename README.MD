@@ -1,83 +1,83 @@
 # 📘 Transformer-Based Anomaly Detection on Credit Card Fraud Data
 
-This project implements a Transformer Autoencoder with contrastive learning and adversarial training to detect fraudulent credit card transactions.  
-The model is trained on the popular Credit Card Fraud Detection dataset and reframed as a multivariate time-series anomaly detection problem using sliding windows.
+[![Python](https://img.shields.io/badge/python-3.10-blue?logo=python)](https://www.python.org/)
+[![Jupyter](https://img.shields.io/badge/jupyter-notebook-orange?logo=jupyter)](https://jupyter.org/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue?logo=docker)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+This project implements a **Transformer Autoencoder** with **contrastive learning** and **adversarial training** to detect fraudulent credit card transactions.  
+The model is trained on the [Credit Card Fraud Detection dataset on Kaggle](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud) and reframed as a multivariate time-series anomaly detection problem using sliding windows.
 
 ---
 
 ## 📂 1. Dataset Used
 
-The dataset comes from the [Credit Card Fraud Detection dataset on Kaggle](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud), consisting of:
-
-- **284,807 transactions**
-- **30 input variables**:
-  - V1–V28 (PCA features)
-  - Amount
-  - Time
-- **Extremely imbalanced distribution**:
-  - Fraudulent transactions: 492
-  - Normal transactions: 284,315
+- **Transactions:** 284,807  
+- **Input variables:**  
+  - V1–V28 (PCA features)  
+  - Amount  
+  - Time  
+- **Imbalance:**  
+  - Fraudulent transactions: 492  
+  - Normal transactions: 284,315  
   - Fraud ratio: 0.172%
 
-After processing into sliding windows:
+After preprocessing into sliding windows:
 
 - Windows: `(284800, 8, 29)`  
 - Anomalous windows: 3,589 out of 284,800  
-
-Each window contains 8 consecutive transactions, labeled `1` if any transaction inside is fraudulent.
+- Each window contains 8 consecutive transactions labeled `1` if any transaction inside is fraudulent.
 
 ---
 
 ## 🔧 2. Preprocessing Steps
 
-- **Load and order dataset**  
-  - Transactions are sorted chronologically using the `Time` column to prevent data leakage and simulate real-time streams.
+1. **Load and order dataset**  
+   - Sort transactions chronologically by `Time` to prevent data leakage.
 
-- **Feature selection**  
-  - Used: V1–V28 (PCA features), Amount  
-  - Excluded: Class (label), Time (only used for ordering)
+2. **Feature selection**  
+   - Used: V1–V28, Amount  
+   - Excluded: Class (label), Time (ordering only)
 
-- **Standardization**  
-  - All features scaled using `StandardScaler()`
+3. **Standardization**  
+   - All features scaled using `StandardScaler()`
 
-- **Sliding window creation**  
-  - Window length: 8  
-  - Step size: 1  
-  - Output shapes:  
-    - `X shape: (284800, 8, 29)`  
-    - `y shape: (284800,)`
+4. **Sliding window creation**  
+   - Window length: 8  
+   - Step size: 1  
+   - Output shapes:  
+     - `X shape: (284800, 8, 29)`  
+     - `y shape: (284800,)`
 
-- **Window-level labeling**  
-  - `label = 1` if **any** transaction in the window is fraudulent  
-  - Converts dataset into a sequence anomaly detection task.
+5. **Window-level labeling**  
+   - `label = 1` if **any** transaction in the window is fraudulent  
+
+This converts the dataset into a **sequence anomaly detection task**.
 
 ---
 
 ## 🧠 3. Model Architecture and Components
 
-A custom Transformer Autoencoder with:
-
-- **Encoder**  
+- **Encoder:**  
   - Linear projection 29 → 128  
   - PositionalEncoding  
   - 2-layer TransformerEncoder  
-  - AdaptiveAvgPool1D (compress sequence)  
-  - Latent vector: 128 → 64
+  - AdaptiveAvgPool1D  
+  - Latent vector 128 → 64
 
-- **Decoder**  
+- **Decoder:**  
   - Linear projection 64 → 128  
   - 2-layer TransformerEncoder  
   - Output projection 128 → 29
 
-- **Contrastive Learning Module**  
-  - Encourages tighter clustering of normal latent vectors
+- **Contrastive Learning Module:**  
+  - Encourages clustering of normal latent vectors
 
-- **Adversarial Components**  
-  - Discriminator loss  
-  - Generator loss  
-  - Improves sensitivity to anomalies via adversarial refinement
+- **Adversarial Components:**  
+  - Discriminator and Generator losses  
+  - Refines model sensitivity to anomalies
 
-- **Loss Terms**  
+- **Loss Terms:**  
   - Reconstruction loss  
   - Contrastive loss  
   - Adversarial loss  
@@ -87,23 +87,24 @@ A custom Transformer Autoencoder with:
 
 ## 🎓 4. Training Procedure
 
-- Trained for 20 epochs with combined losses.  
+- **Epochs:** 20  
+- **Losses:** Combined reconstruction, contrastive, and adversarial losses  
 
-**Example training outputs**:
+**Example outputs:**
 
--Epoch 1/20 | recon: 0.8539 | contrast: 3.6985 | disc: 1.3166 | gen: 0.7520 | val_auc: 0.8944
+- Epoch 1/20 | recon: 0.8539 | contrast: 3.6985 | disc: 1.3166 | gen: 0.7520 | val_auc: 0.8944
 - ...
 - Epoch 20/20 | recon: 0.4995 | contrast: 3.6390 | disc: 1.3259 | gen: 0.8348 | val_auc: 0.7775
 
 
-**Observations**:
+**Observations:**
 
 - Reconstruction loss steadily decreases  
-- Contrastive loss stays stable  
+- Contrastive loss stable  
 - Adversarial losses oscillate (expected)  
 - Validation AUC converges around 0.77
 
-**Training splits**:
+**Data splits:**
 
 - Train: 227,840 windows  
 - Valid: 28,480 windows  
@@ -113,20 +114,18 @@ A custom Transformer Autoencoder with:
 
 ## 📊 5. Evaluation Metrics
 
-Evaluation is performed using reconstruction errors on the test set.
-
 | Metric   | Score  |
 |----------|--------|
 | ROC AUC  | 0.7670 |
 | PR AUC   | 0.0836 |
 
-> Note: PR AUC is expectedly low due to extreme class imbalance.
+> Note: PR AUC is low due to extreme class imbalance.
 
 ---
 
 ## 🚨 6. Results (Anomaly Detection Demonstration)
 
-**Top-k anomalous windows detected by reconstruction error**:
+**Top-k anomalous windows by reconstruction error:**
 
 | Index  | Score  | Label |
 |--------|--------|-------|
@@ -137,68 +136,48 @@ Evaluation is performed using reconstruction errors on the test set.
 | 21536  | 14.87  | 0     |
 | 7281   | 13.77  | 1     |
 
-**Analysis**:
+**Analysis:**
 
-- Among the top 6 anomalies, 3 are true fraud windows (labels = 1)  
-- Confirms the model ranks anomalous patterns highly  
+- 3 of the top 6 anomalies are true fraud windows  
+- Model ranks anomalous patterns effectively  
 
-**Curves generated**:
-
-- ROC Curve (AUC ≈ 0.77)  
-- Precision–Recall Curve (AUC ≈ 0.084)
+**Curves generated:** ROC Curve (AUC ≈ 0.77), Precision–Recall Curve (AUC ≈ 0.084)
 
 ---
 
-## ✔ 7. Correctness and Functionality of the Implementation
+## ✔ 7. Correctness and Functionality
 
-- **Preprocessing**  
-  - Standardization, Time-based sorting, Sliding window conversion, Proper window labeling
-- **Model**  
-  - Fully implemented Transformer encoder & decoder, Latent bottleneck, Positional encoding, Contrastive & adversarial modules, Correct loss aggregation
-- **Evaluation**  
-  - Uses `roc_auc_score` and `precision_recall_curve` correctly, Applies reconstruction error to detect anomalies, Visualizations included
+- **Preprocessing:** Standardization, time-based sorting, sliding window creation, correct labeling  
+- **Model:** Transformer encoder & decoder, latent bottleneck, contrastive & adversarial modules  
+- **Evaluation:** Reconstruction-based detection, ROC and PR metrics, visualizations included  
 
 ---
 
-## ⭐ 8. Effectiveness of the Anomaly Detection Results
+## ⭐ 8. Effectiveness of Results
 
-**Strengths**:
+**Strengths:**
 
-- Transformer captures temporal dependencies  
-- Reconstruction-based detection identifies genuine fraud cases  
-- Top anomalous windows include real fraud events  
-- ROC AUC ≈ 0.77 indicates strong ranking ability
+- Captures temporal dependencies  
+- Detects genuine fraud cases  
+- ROC AUC ≈ 0.77 indicates strong ranking
 
-**Limitations (expected)**:
+**Limitations:**
 
-- PR AUC ≈ 0.084 due to extreme imbalance  
-- Some anomalies are false positives but still high-error patterns  
+- PR AUC ≈ 0.084 due to class imbalance  
+- Some false positives, but still high-error patterns useful for investigation
 
-**Real-world usefulness**:
+**Use Cases:**
 
 - Real-time fraud surveillance  
-- Pre-filtering suspicious patterns  
+- Pre-filtering suspicious transactions  
 - Ranking transactions for manual review
 
 ---
 
-## 📦 Conclusion
-
-This project demonstrates a powerful, modern anomaly detection pipeline using:
-
-- Transformer architectures  
-- Sequence modeling  
-- Contrastive representation learning  
-- Adversarial refinement  
-- Reconstruction error scoring
-
-The results validate the model’s ability to detect and rank fraudulent behavior, even in a highly imbalanced financial dataset.
-
-
 ## 📦 9. Repository Structure
 
-- ├─ DM_Project.ipynb # Main Jupyter Notebook with implementation
-- ├─ Dockerfile # Docker setup for environment reproducibility
+- ├─ DM_Project.ipynb # Main Jupyter Notebook
+- ├─ Dockerfile # Docker environment setup
 - └─ requirements.txt # Python dependencies
 
 
@@ -209,11 +188,11 @@ The results validate the model’s ability to detect and rank fraudulent behavio
 ### Using Python
 
 ```bash
-# Clone the repo
+# Clone the repository
 git clone https://github.com/Aubakerzzz/DM_Projects
-cd DM_Projects
+cd DM_projects
 
-# Create environment (optional but recommended)
+# Create virtual environment
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
 venv\Scripts\activate     # Windows
@@ -221,21 +200,37 @@ venv\Scripts\activate     # Windows
 # Install dependencies
 pip install -r requirements.txt
 
-# Launch Jupyter Notebook
+# Launch Notebook
 jupyter notebook DM_Project.ipynb
 
 
-## Using Docker 
+---
 
+## 📦 9. Repository Structure
 
 # Build Docker image
 docker build -t transformer-fraud .
 
-# Run Docker container
+# Run container
 docker run -p 8888:8888 transformer-fraud
 
 # Open Jupyter Notebook in browser
 http://localhost:8888
 
 
+## 📌 11. Conclusion
+
+This project demonstrates a modern anomaly detection pipeline using:
+
+Transformer architectures
+
+Sequence modeling
+
+Contrastive representation learning
+
+Adversarial refinement
+
+Reconstruction error scoring
+
+The results validate the model’s ability to detect and rank fraudulent behavior even in a highly imbalanced dataset.
 
